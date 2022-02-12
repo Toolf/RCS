@@ -8,7 +8,7 @@ def mul(arr):
 
 
 class Pstate:
-    # Ф-ія імовірності знаходження системи в певному стані
+    # Ф-ія ймовірності знаходження системи в певному стані
 
     def __init__(self, P):
         self.P = P
@@ -22,7 +22,7 @@ class Pstate:
 
 
 class ExistPath:
-    # Ф-ія існування шляху між вершинами графа через множену проміжних вершин
+    # Ф-ія існування шляху між вершинами графа через множину проміжних вершин
 
     def __init__(self, graph):
         self.graph = graph
@@ -32,7 +32,8 @@ class ExistPath:
             if v == to_:
                 return True
             if v in through:
-                if self(from_=v, to_=to_, through=[vertex for vertex in through if vertex != v]):
+                through_ = [vertex for vertex in through if vertex != v]
+                if self(from_=v, to_=to_, through=through_):
                     return True
         return False
 
