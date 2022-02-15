@@ -1,195 +1,201 @@
-import math
-import matplotlib.pyplot as plt
+from math import log
+
+"""
+- Факт 1
+    При **роздільному** резервуванні спочатку обраховуються 
+    ймовірності безвідмовної роботи елементів з урахуванням
+    їхнього резервування, а потім ймовірність безвідмовної 
+    роботи схеми в цілому
+
+- Факт 2
+    При **загальному** резервуванні спочатку обраховується ймовірність 
+    безвідмовної роботи схеми без резервування (p_system), 
+    а потім за допомогою формул паралельного з’єднання 
+    ймовірність схеми з резервуванням
+
+- Факт 3
+    При **навантаженому** резервуванні резервні елементи працюють
+    в режимі основних з самого початку, тому іморність відмови 
+    елемента рахується як відмова даного елемента та всіх резервних.
+    Тобто за формолою qi*qi_1*...*qi_k = qi^(k+1)
+
+- Факт 4
+    При **ненавантаженому** резервуванні ймовірність відмови
+    в (k+1)! раз менша, ніж при навантаженому.
+"""
+
+def mul(arr):
+    r = 1
+    for el in arr:
+        r *= el
+    return r
+
+def get_state(i, n):
+    return [1 if (i & (1<<k)) != 0 else 0 for k in range(n)]
 
 
-# =========== Utils ========== 
-def average(values):
-    return sum(values)/len(values)
+class ExistPath:
+    def __init__(self, graph):
+        self.graph = graph
 
-def count(ls, cond):
-    return sum([cond(elem) for elem in ls])
-
-def in_interval(start, end):
-    def f(t):
-        return start < t <= end
-
-    return f
-
-def Ni(ts, interval_start, interval_end):
-    return count(ts, in_interval(interval_start, interval_end))
-
-# =========== Utils end ============
+    def __call__(self, *,from_, to_, through):
+        for v in self.graph[from_]:
+            if v == to_:
+                return True
+            if v in through:
+                through_ = [vertex for vertex in through if vertex != v]
+                if self(from_=v, to_=to_, through=through_):
+                    return True
+        return False
 
 
-
-class FStar:
-    # Ф-ія статистичної щільності розподілу (як гістограма)
-
-    def __init__(self, ts, steps = 10):
-        t_max = max(ts)
-        h = t_max / steps
-        N = len(ts)
-        self.fs = [
-            Ni(ts, part*h, (part + 1)*h)/ (N * h)
-            for part in range(0, steps)
-        ]
-        self.h = h
-
-    def __call__(self, t):
-        part = math.floor(t / self.h)
-
-        if (t == t_max):
-            return self.fs[-1]
+class PState:
+    def __init__(self, P):
+        self.P = P
+        self.Q = [1-pi for pi in P]
         
-        if (part < 0 or len(self.fs) <= part):
-            raise Exception(f"Unknown interval {t=} {part=}")
+    def __call__(self, s):
+        return mul([
+            self.P[i] if si == 1 else self.Q[i]
+            for i,si in enumerate(s) 
+        ])
 
-        return self.fs[part] 
 
-    def integral(self, start, end):
-        if start > end:
-            raise Exception(f"Invalid interval from {start} to {end}")
-        start = max(start, 0)
-        end = min(end, len(self.fs) * self.h)
+class Workable:
+    def __init__(self, graph, start, end):
+        self.start = start
+        self.end = end
+        self.exist_path = ExistPath(graph)
+
+    def __call__(self, s):
+        through = [i+1 for i,si in enumerate(s) if si == 1]
+        return self.exist_path(
+            from_=self.start,
+            to_=self.end,
+            through=through
+        )
         
-        _start = math.floor(start / self.h) * self.h
-        _end = math.ceil(end / self.h) * self.h
 
-        _start_index = math.floor(start / self.h)
-        _end_index = math.ceil(end / self.h) - 1
+def factorial(n):
+    return mul(range(1, n+1))
 
-        return sum(self.fs[_start_index:_end_index+1]) * self.h \
-            - (
-                (_end - end)*self.fs[_end_index] 
-                if _end_index  < len(self.fs) else 0
-            ) \
-            - (
-                (start - _start)*self.fs[_start_index] 
-                if _start_index < len(self.fs) else 0
-            )
-            
+# ========== Вхідні дані за варіантом ==============
 
-class Q:
-    # Ф-ія імовірності відмови
-    
-    def __init__(self, f):
-        self.f = f
+n = 8
+start_index = 0
+end_index = n+1
 
-    def __call__(self, t):
-        return self.f.integral(0, t)
+G = {
+    0: [1],             # start
+    1: [0, 1, 2, 3],    # 1
+    2: [1, 3, 4, 5],    # 2
+    3: [1, 2, 4, 6, 8], # 3
+    4: [2, 3, 5, 6, 8], # 4
+    5: [2, 4, 6, 7],    # 5
+    6: [3, 4, 5, 7, 8], # 6
+    7: [5, 6, 8, 9],    # 7
+    8: [3, 4, 6, 7, 9], # 8
+    9: [7, 8],          # end
+}
 
-
-class P:
-    # Ф-ія безвідмовної роботи
-
-    def __init__(self, f):
-        self.f = f
-
-    def __call__(self, t) -> float:
-        return 1 - self.f.integral(0, t)
-
-
-class LambdaStar:
-    # Ф-ія інтенсивність відмови
-
-    def __init__(self, ts, steps=10):
-        self.f = FStar(ts, steps=steps)
-        self.p = P(self.f)
-    
-    def __call__(self, t):
-        return self.f(t) / self.p(t)
-
-
-class GamaStar:
-    # Ф-ія гама-фідсоткового наробітку на відмову
-
-    def __init__(self, ts, steps=10):
-        self.ts = ts
-        self.h = max(ts) / steps
-        self.steps = steps
-        self.f = FStar(ts, steps=steps)
-        self.p = P(self.f)
-        
-    def __call__(self, gama):
-        if gama <= 0 or gama > 1:
-            raise Exception(f"Invalid gama value, {gama=}")
-        
-        h = self.h
-        i = 0
-        while self.p(i*h) >= gama and self.p(i*h) != 0:
-            i+=1
-
-        ti = i * h
-        ti_ = (i - 1) * h
-        
-        return ti - h*self.d(ti, ti_, gama)
-
-    def d(self, ti, ti_, gama):
-        return (self.p(ti) - gama) / (self.p(ti) - self.p(ti_))
-
-
-
-
-# ========== Дані за варіантом ================
-PART_COUNT = 10
-
-ts = [
-    498, 76, 2, 269, 346, 491, 483, 124, 
-    1051, 218, 707, 339, 40, 21, 723, 3, 
-    144, 136, 18, 248, 40, 515, 248, 444,
-    305, 146, 672, 641, 39, 234, 478, 475,
-    72, 247, 12, 169, 220, 92, 357, 436,
-    121, 5, 3, 81, 115, 271, 259, 389, 305,
-    518, 382, 89, 189, 392, 11, 568, 78, 
-    464, 189, 898, 309, 45, 370, 1358, 173, 
-    66, 616, 733, 152, 239, 207, 963, 379, 
-    40, 216, 364, 292, 211, 253, 48, 211, 
-    380, 55, 495, 302, 299, 100, 253, 173, 
-    51, 122, 403, 286, 1258, 37, 127, 492, 
-    969, 155, 573,
+P = [
+    0.50,
+    0.60,
+    0.70,
+    0.80,
+    0.85,
+    0.90,
+    0.92,
+    0.94,
 ]
 
-gama = 0.82
-p_t = 1328
-lambda_t = 200
+Q = [1-pi for pi in P]
 
-# Відсортуємо для зручності часи відмови
-ts.sort()
-t_max = max(ts)
+T = 2251
+
+k1 = 2
+k2 = 1
+
 # ==================================================
 
-# =========== Підготовка основних ф-ій =============
-f_star = FStar(ts, steps=PART_COUNT)
-q_star = Q(f_star)
-p_star = P(f_star)
-lambda_star = LambdaStar(ts, steps=PART_COUNT)
-gama_star = GamaStar(ts, steps=PART_COUNT)
-# ==================================================
+# ================ Підготовка ф-ій =======================
+workable = Workable(G, start_index, end_index)
+p_state = PState(P)
+# ========================================================
 
-# ============== Вивід результатів виконання завдання ============
-print(f"Середній наробіток до відмови: {average(ts)}")
-print(f"Гама відсотоковий наробітку на відмову ({gama=}): {gama_star(gama)}")
-print(f"Ймовірність безвідмовної роботи протягом {p_t}: {p_star(p_t)}")
-print(f"Інтенсивність відмови за час {lambda_t}: {lambda_star(lambda_t)}")
-# ================================================================
+# ====== Дані з попередньої лабораторної ========
+all_states = [get_state(i, n) for i in range(2**n)]
+workable_states = [*filter(workable, all_states)]
 
-# ============= Вивід результатів в графічному вигляді ===============
-x = [*range(t_max+1)]
-f_y = [f_star(xi) for xi in x]
-p_y = [p_star(xi) for xi in x]
-q_y = [q_star(xi) for xi in x]
-gama_x = [*map(lambda x: x/100,range(1, 101))]
-gama_y = [gama_star(gama_i) for gama_i in gama_x]
+p_system = sum([p_state(state) for state in workable_states])
+q_system = 1 - p_system
+t_system = -T / log(p_system)
+print(f"{p_system = }")
+print(f"{q_system = }")
+print(f"{t_system = }")
+# ===============================================
 
-fig, axs = plt.subplots(2, 2)
-axs[0, 0].plot(x, f_y)
-axs[0, 0].set_title('F*(t)')
-axs[0, 1].plot(x, p_y, 'tab:orange')
-axs[0, 1].set_title('P*(t)')
-axs[1, 0].plot(x, q_y, 'tab:green')
-axs[1, 0].set_title('Q*(t)')
-axs[1, 1].plot(gama_x, gama_y, 'tab:red')
-axs[1, 1].set_title('T_gama(gama)')
+# Загальне навантаженне (не дає ніякого виграшу)
+def generalLoaded(k, T, p_system):
+    p_reserved_system = 1 - (1 - p_system)**(k+1)
+    q_reserved_system = 1 - p_reserved_system
+    t_reserved_system = -T / log(p_reserved_system)
 
-plt.show()
-# =====================================================================
+    return p_reserved_system, q_reserved_system, t_reserved_system
+
+# Загальне ненавантажене
+def generalNonloaded(k, T, p_system):
+    p_reserved_system = 1 - (1 - p_system) / factorial(k+1)
+    q_reserved_system = 1 - p_reserved_system
+    t_reserved_system = -T / log(p_reserved_system)
+
+    return p_reserved_system, q_reserved_system, t_reserved_system
+
+# Розподільне навантажене
+def distributiveLoaded(k, T, Q, workable_states):
+    Q_reserved = [qi**(k+1) for qi in Q]
+    P_reserved = [1-qr for qr in Q_reserved]
+    p_reserved_state = PState(P_reserved)
+
+    p_reserved_system = sum([
+        p_reserved_state(state) 
+        for state in workable_states
+    ])
+    q_reserved_system = 1 - p_reserved_system
+    t_reserved_system = -T / log(p_reserved_system)
+
+    return p_reserved_system, q_reserved_system, t_reserved_system
+
+# Розподільне ненавантажене
+def distributiveNonloaded(k, T, Q, workable_states):
+    Q_reserved = [qi**(k+1) for qi in Q]
+    P_reserved = [1-qr for qr in Q_reserved]
+    p_reserved_state = PState(P_reserved)
+
+    p_reserved_system = 1 - 1 / factorial(k + 1) * (1 - sum([
+        p_reserved_state(state) 
+        for state in workable_states
+    ]))
+    q_reserved_system = 1 - p_reserved_system
+    t_reserved_system = -T / log(p_reserved_system)
+
+    return p_reserved_system, q_reserved_system, t_reserved_system
+
+
+# ================== Виконання завдання ===================
+print(f"========== Загальне навантаженне (k={k1}) ==========")
+
+p_reserved_system, q_reserved_system, t_reserved_system = \
+    generalLoaded(k1, T, p_system)
+
+print(f"{p_reserved_system = }")
+print(f"{q_reserved_system = }")
+print(f"{t_reserved_system = }")
+
+print(f"========== Загальне ненавантаженне (k={k2}) ==========")
+p_reserved_system, q_reserved_system, t_reserved_system = \
+    generalNonloaded(k2, T, p_system)
+print(f"{p_reserved_system = }")
+print(f"{q_reserved_system = }")
+print(f"{t_reserved_system = }")
+# =========================================================
