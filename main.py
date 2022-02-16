@@ -1,27 +1,27 @@
 from math import log
 
 """
-- Факт 1
+- 1
     При **роздільному** резервуванні спочатку обраховуються 
     ймовірності безвідмовної роботи елементів з урахуванням
     їхнього резервування, а потім ймовірність безвідмовної 
     роботи схеми в цілому
 
-- Факт 2
+- 2
     При **загальному** резервуванні спочатку обраховується ймовірність 
     безвідмовної роботи схеми без резервування (p_system), 
     а потім за допомогою формул паралельного з’єднання 
     ймовірність схеми з резервуванням
 
-- Факт 3
+- 3
     При **навантаженому** резервуванні резервні елементи працюють
     в режимі основних з самого початку, тому іморність відмови 
     елемента рахується як відмова даного елемента та всіх резервних.
     Тобто за формолою qi*qi_1*...*qi_k = qi^(k+1)
 
-- Факт 4
+- 4 (?? це працює лише для роздільного ??)
     При **ненавантаженому** резервуванні ймовірність відмови
-    в (k+1)! раз менша, ніж при навантаженому.
+    в (k+1)! раз менша, ніж при навантаженому. 
 """
 
 def mul(arr):
@@ -135,7 +135,7 @@ print(f"{q_system = }")
 print(f"{t_system = }")
 # ===============================================
 
-# Загальне навантаженне (не дає ніякого виграшу)
+# Загальне навантаженне
 def generalLoaded(k, T, p_system):
     p_reserved_system = 1 - (1 - p_system)**(k+1)
     q_reserved_system = 1 - p_reserved_system
@@ -191,6 +191,10 @@ p_reserved_system, q_reserved_system, t_reserved_system = \
 print(f"{p_reserved_system = }")
 print(f"{q_reserved_system = }")
 print(f"{t_reserved_system = }")
+print(f"Gp = {p_reserved_system / p_system}")
+print(f"Gq = {q_reserved_system / q_system}")
+print(f"Gt = {t_reserved_system / T}")
+
 
 print(f"========== Загальне ненавантаженне (k={k2}) ==========")
 p_reserved_system, q_reserved_system, t_reserved_system = \
@@ -198,4 +202,28 @@ p_reserved_system, q_reserved_system, t_reserved_system = \
 print(f"{p_reserved_system = }")
 print(f"{q_reserved_system = }")
 print(f"{t_reserved_system = }")
+print(f"Gp = {p_reserved_system / p_system}")
+print(f"Gq = {q_reserved_system / q_system}")
+print(f"Gt = {t_reserved_system / T}")
+
+print(f"========== Розподільне навантажене (k={1}) ==========")
+p_reserved_system, q_reserved_system, t_reserved_system = \
+    distributiveLoaded(1, T, Q, workable_states)
+print(f"{p_reserved_system = }")
+print(f"{q_reserved_system = }")
+print(f"{t_reserved_system = }")
+print(f"Gp = {p_reserved_system / p_system}")
+print(f"Gq = {q_reserved_system / q_system}")
+print(f"Gt = {t_reserved_system / T}")
+
+print(f"========== Розподільне ненавантажене (k={1}) ==========")
+p_reserved_system, q_reserved_system, t_reserved_system = \
+    distributiveNonloaded(1, T, Q, workable_states)
+print(f"{p_reserved_system = }")
+print(f"{q_reserved_system = }")
+print(f"{t_reserved_system = }")
+print(f"Gp = {p_reserved_system / p_system}")
+print(f"Gq = {q_reserved_system / q_system}")
+print(f"Gt = {t_reserved_system / T}")
+
 # =========================================================
