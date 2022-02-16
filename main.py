@@ -87,7 +87,7 @@ end_index = n+1
 
 G = {
     0: [1],             # start
-    1: [0, 1, 2, 3],    # 1
+    1: [0, 2, 3],    # 1
     2: [1, 3, 4, 5],    # 2
     3: [1, 2, 4, 6, 8], # 3
     4: [2, 3, 5, 6, 8], # 4
@@ -130,6 +130,7 @@ workable_states = [*filter(workable, all_states)]
 p_system = sum([p_state(state) for state in workable_states])
 q_system = 1 - p_system
 t_system = -T / log(p_system)
+print("========== Дані системи без резервування ==========")
 print(f"{p_system = }")
 print(f"{q_system = }")
 print(f"{t_system = }")
@@ -151,8 +152,8 @@ def generalNonloaded(k, T, p_system):
 
     return p_reserved_system, q_reserved_system, t_reserved_system
 
-# Розподільне навантажене
-def distributiveLoaded(k, T, Q, workable_states):
+# Роздільне навантажене
+def seperativeLoaded(k, T, Q, workable_states):
     Q_reserved = [qi**(k+1) for qi in Q]
     P_reserved = [1-qr for qr in Q_reserved]
     p_reserved_state = PState(P_reserved)
@@ -166,8 +167,8 @@ def distributiveLoaded(k, T, Q, workable_states):
 
     return p_reserved_system, q_reserved_system, t_reserved_system
 
-# Розподільне ненавантажене
-def distributiveNonloaded(k, T, Q, workable_states):
+# Роздільне ненавантажене
+def seperativeNonloaded(k, T, Q, workable_states):
     Q_reserved = [qi**(k+1) for qi in Q]
     P_reserved = [1-qr for qr in Q_reserved]
     p_reserved_state = PState(P_reserved)
@@ -206,9 +207,9 @@ print(f"Gp = {p_reserved_system / p_system}")
 print(f"Gq = {q_reserved_system / q_system}")
 print(f"Gt = {t_reserved_system / T}")
 
-print(f"========== Розподільне навантажене (k={1}) ==========")
+print(f"========== Роздільне навантажене (k={1}) ==========")
 p_reserved_system, q_reserved_system, t_reserved_system = \
-    distributiveLoaded(1, T, Q, workable_states)
+    seperativeLoaded(1, T, Q, workable_states)
 print(f"{p_reserved_system = }")
 print(f"{q_reserved_system = }")
 print(f"{t_reserved_system = }")
@@ -216,9 +217,9 @@ print(f"Gp = {p_reserved_system / p_system}")
 print(f"Gq = {q_reserved_system / q_system}")
 print(f"Gt = {t_reserved_system / T}")
 
-print(f"========== Розподільне ненавантажене (k={1}) ==========")
+print(f"========== Роздільне ненавантажене (k={1}) ==========")
 p_reserved_system, q_reserved_system, t_reserved_system = \
-    distributiveNonloaded(1, T, Q, workable_states)
+    seperativeNonloaded(1, T, Q, workable_states)
 print(f"{p_reserved_system = }")
 print(f"{q_reserved_system = }")
 print(f"{t_reserved_system = }")
