@@ -86,27 +86,27 @@ start_index = 0
 end_index = n+1
 
 G = {
-    0: [1],             # start
-    1: [0, 2, 3],    # 1
-    2: [1, 3, 4, 5],    # 2
-    3: [1, 2, 4, 6, 8], # 3
-    4: [2, 3, 5, 6, 8], # 4
-    5: [2, 4, 6, 7],    # 5
-    6: [3, 4, 5, 7, 8], # 6
-    7: [5, 6, 8, 9],    # 7
-    8: [3, 4, 6, 7, 9], # 8
-    9: [7, 8],          # end
+    0: [1, 2],          # start
+    1: [0, 2, 3, 5],    # 1
+    2: [0, 1, 4, 7],    # 2
+    3: [1, 4, 5],       # 3
+    4: [2, 3, 7],       # 4
+    5: [1, 3, 6],       # 5
+    6: [5, 8, 9],       # 6
+    7: [2, 4, 8],       # 7
+    8: [6, 7, 9],       # 8
+    9: [6, 8],          # end
 }
 
 P = [
-    0.50,
-    0.60,
-    0.70,
-    0.80,
-    0.85,
-    0.90,
-    0.92,
-    0.94,
+    0.00,
+    0.08,
+    0.12,
+    0.21,
+    0.12,
+    0.27,
+    0.84,
+    0.12,
 ]
 
 Q = [1-pi for pi in P]
@@ -207,24 +207,24 @@ print(f"Gp = {p_reserved_system / p_system}")
 print(f"Gq = {q_reserved_system / q_system}")
 print(f"Gt = {t_reserved_system / T}")
 
-print(f"========== Роздільне навантажене (k={1}) ==========")
-p_reserved_system, q_reserved_system, t_reserved_system = \
-    seperativeLoaded(1, T, Q, workable_states)
-print(f"{p_reserved_system = }")
-print(f"{q_reserved_system = }")
-print(f"{t_reserved_system = }")
-print(f"Gp = {p_reserved_system / p_system}")
-print(f"Gq = {q_reserved_system / q_system}")
-print(f"Gt = {t_reserved_system / T}")
+# print(f"========== Роздільне навантажене (k={1}) ==========")
+# p_reserved_system, q_reserved_system, t_reserved_system = \
+#     seperativeLoaded(1, T, Q, workable_states)
+# print(f"{p_reserved_system = }")
+# print(f"{q_reserved_system = }")
+# print(f"{t_reserved_system = }")
+# print(f"Gp = {p_reserved_system / p_system}")
+# print(f"Gq = {q_reserved_system / q_system}")
+# print(f"Gt = {t_reserved_system / T}")
 
-print(f"========== Роздільне ненавантажене (k={1}) ==========")
-p_reserved_system, q_reserved_system, t_reserved_system = \
-    seperativeNonloaded(1, T, Q, workable_states)
-print(f"{p_reserved_system = }")
-print(f"{q_reserved_system = }")
-print(f"{t_reserved_system = }")
-print(f"Gp = {p_reserved_system / p_system}")
-print(f"Gq = {q_reserved_system / q_system}")
-print(f"Gt = {t_reserved_system / T}")
+# print(f"========== Роздільне ненавантажене (k={1}) ==========")
+# p_reserved_system, q_reserved_system, t_reserved_system = \
+#     seperativeNonloaded(1, T, Q, workable_states)
+# print(f"{p_reserved_system = }")
+# print(f"{q_reserved_system = }")
+# print(f"{t_reserved_system = }")
+# print(f"Gp = {p_reserved_system / p_system}")
+# print(f"Gq = {q_reserved_system / q_system}")
+# print(f"Gt = {t_reserved_system / T}")
 
-# =========================================================
+# # =========================================================
